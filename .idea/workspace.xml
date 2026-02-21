@@ -4,25 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d57ff9d3-5eec-435c-95bf-610b26381957" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/ItoSub.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/itosub/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/itosub/asr/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/itosub/asr/base.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/itosub/asr/faster_whisper_file.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/itosub/contracts.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/itosub/demos/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/itosub/demos/demo_asr_file.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/itosub/nlp/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/itosub/nlp/translator/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_asr_wrapper.py" afterDir="false" />
-    </list>
+    <list default="true" id="d57ff9d3-5eec-435c-95bf-610b26381957" name="Changes" comment="Milestone 2 ver 0.2.001" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -38,6 +20,12 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "WaiYan-1302"
+  }
+}]]></component>
   <component name="GithubPullRequestsUISettings"><![CDATA[{
   "selectedUrlAndAccountId": {
     "url": "https://github.com/WaiYan-1302/ItoSub.git",
@@ -95,8 +83,17 @@
       <updated>1771676738476</updated>
       <workItem from="1771676739630" duration="2776000" />
       <workItem from="1771698035906" duration="1430000" />
-      <workItem from="1771699994949" duration="580000" />
+      <workItem from="1771699994949" duration="1003000" />
     </task>
+    <task id="LOCAL-00001" summary="Milestone 2 ver 0.2.001">
+      <option name="closed" value="true" />
+      <created>1771700802198</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1771700802198</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -112,6 +109,10 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Milestone 2 ver 0.2.001" />
+    <option name="LAST_COMMIT_MESSAGE" value="Milestone 2 ver 0.2.001" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/ItoSub$.coverage" NAME=" Coverage Results" MODIFIED="1771696612121" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/.venv/tests" />
