@@ -4,12 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d57ff9d3-5eec-435c-95bf-610b26381957" name="Changes" comment="Milestone 2 ver 0.2.001">
-      <change afterPath="$PROJECT_DIR$/itosub/nlp/postprocess_en.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_postprocess_en.py" afterDir="false" />
+    <list default="true" id="d57ff9d3-5eec-435c-95bf-610b26381957" name="Changes" comment="Milestone 3 ver 0.3.002">
+      <change afterPath="$PROJECT_DIR$/itosub/asr/faster_whisper_stream.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/itosub/asr/stream_base.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/itosub/audio/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/itosub/audio/mic.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/itosub/demos/demo_live_mic_translate.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/itosub/live/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/itosub/live/pipeline.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_live_pipeline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/itosub/demos/demo_replay_translate.py" beforeDir="false" afterPath="$PROJECT_DIR$/itosub/demos/demo_replay_translate.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/itosub/nlp/segmenter.py" beforeDir="false" afterPath="$PROJECT_DIR$/itosub/nlp/segmenter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/itosub/contracts.py" beforeDir="false" afterPath="$PROJECT_DIR$/itosub/contracts.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -90,7 +96,8 @@
       <workItem from="1771676739630" duration="2776000" />
       <workItem from="1771698035906" duration="1430000" />
       <workItem from="1771699994949" duration="1086000" />
-      <workItem from="1771735678820" duration="2044000" />
+      <workItem from="1771735678820" duration="2665000" />
+      <workItem from="1771758414252" duration="365000" />
     </task>
     <task id="LOCAL-00001" summary="Milestone 2 ver 0.2.001">
       <option name="closed" value="true" />
@@ -116,7 +123,15 @@
       <option name="project" value="LOCAL" />
       <updated>1771736273410</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Milestone 3 ver 0.3.002">
+      <option name="closed" value="true" />
+      <created>1771737768837</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1771737768837</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -135,7 +150,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Milestone 2 ver 0.2.001" />
-    <option name="LAST_COMMIT_MESSAGE" value="Milestone 2 ver 0.2.001" />
+    <MESSAGE value="Milestone 3 ver 0.3.002" />
+    <option name="LAST_COMMIT_MESSAGE" value="Milestone 3 ver 0.3.002" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/ItoSub$.coverage" NAME=" Coverage Results" MODIFIED="1771696612121" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/.venv/tests" />

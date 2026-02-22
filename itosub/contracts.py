@@ -22,3 +22,15 @@ class ASRSegment:
     t0: float
     t1: float
     is_final: bool = True  # file mode = final segments
+    
+@dataclass(frozen=True)
+class AudioChunk:
+    """
+    Raw PCM16 audio chunk captured from a live source (e.g., microphone).
+    pcm16: little-endian signed 16-bit PCM bytes (interleaved if channels > 1).
+    """
+    pcm16: bytes
+    sample_rate: int
+    channels: int
+    start_time: float  # seconds since stream start
+    duration: float    # seconds

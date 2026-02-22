@@ -1,0 +1,3 @@
+
+[mic]
+sounddevice>=0.4.6
