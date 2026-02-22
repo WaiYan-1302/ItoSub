@@ -1,3 +1,4 @@
+# itosub/nlp/segmenter.py
 from __future__ import annotations
 
 import re
@@ -14,16 +15,15 @@ class Line:
 
 class SubtitleSegmenter:
     """
-    Merge ASR segments into subtitle-friendly lines.
-    Commit when:
-      - sentence ends (punctuation), OR
-      - time gap between segments is big, OR
-      - line is too long
+    Commit rules (semantic-first):
+      1) Commit when sentence ends (punctuation).
+      2) Commit when there's a big time gap (pause).
+      3) Emergency commit if the buffer becomes too long (hard_max_chars).
     """
-    def __init__(self, max_chars: int = 70, gap_sec: float = 0.8):
-        self.max_chars = max_chars
+    def __init__(self, gap_sec: float = 0.8, hard_max_chars: int = 160):
         self.gap_sec = gap_sec
-        self._buf_text: List[str] = []
+        self.hard_max_chars = hard_max_chars
+        self._buf: List[str] = []
         self._t0: Optional[float] = None
         self._t1: Optional[float] = None
         self._last_end: Optional[float] = None
@@ -34,7 +34,7 @@ class SubtitleSegmenter:
         if not text:
             return out
 
-        # commit if big gap from previous segment
+        # Pause boundary -> flush previous line
         if self._last_end is not None and (t0 - self._last_end) > self.gap_sec:
             out.extend(self.flush())
 
@@ -43,31 +43,34 @@ class SubtitleSegmenter:
         self._t1 = t1
         self._last_end = t1
 
-        self._buf_text.append(text)
-        merged = " ".join(self._buf_text).strip()
+        self._buf.append(text)
+        merged = " ".join(self._buf).strip()
 
-        should_commit = (
-            len(merged) >= self.max_chars
-            or _END_PUNCT.search(merged) is not None
-        )
-
-        if should_commit:
+        # Commit on sentence end
+        if _END_PUNCT.search(merged):
             out.append(Line(text=merged, t0=self._t0, t1=self._t1))
             self._reset()
+            return out
+
+        # Emergency commit only (prevents extremely long run-ons)
+        if len(merged) >= self.hard_max_chars:
+            out.append(Line(text=merged, t0=self._t0, t1=self._t1))
+            self._reset()
+            return out
 
         return out
 
     def flush(self) -> List[Line]:
-        if not self._buf_text or self._t0 is None or self._t1 is None:
+        if not self._buf or self._t0 is None or self._t1 is None:
             self._reset()
             return []
-        merged = " ".join(self._buf_text).strip()
+        merged = " ".join(self._buf).strip()
         line = Line(text=merged, t0=self._t0, t1=self._t1)
         self._reset()
         return [line]
 
     def _reset(self) -> None:
-        self._buf_text = []
+        self._buf = []
         self._t0 = None
         self._t1 = None
         self._last_end = None
