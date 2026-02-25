@@ -10,19 +10,46 @@ from itosub.asr.stream_base import StreamTranscriber
 from itosub.contracts import ASRSegment, AudioChunk
 
 
+from dataclasses import fields
+from itosub.contracts import ASRSegment
+
+import math
+from array import array
+
+def _pcm16_rms(pcm16: bytes) -> float:
+    if not pcm16:
+        return 0.0
+    a = array("h")
+    a.frombytes(pcm16)
+    if len(a) == 0:
+        return 0.0
+    s2 = 0.0
+    for v in a:
+        fv = float(v)
+        s2 += fv * fv
+    return math.sqrt(s2 / len(a))
+
 def _make_asr_segment(*, start: float, end: float, text: str) -> ASRSegment:
     """
-    Construct ASRSegment safely even if your dataclass has extra fields.
-    Assumes it has at least (start, end, text) or a subset thereof.
+    Build ASRSegment regardless of whether the project uses (t0,t1) or (start,end).
     """
     names = {f.name for f in fields(ASRSegment)}
     kwargs = {}
+
+    # timestamps
+    if "t0" in names:
+        kwargs["t0"] = start
+    if "t1" in names:
+        kwargs["t1"] = end
     if "start" in names:
         kwargs["start"] = start
     if "end" in names:
         kwargs["end"] = end
+
+    # text
     if "text" in names:
         kwargs["text"] = text
+
     return ASRSegment(**kwargs)  # type: ignore[arg-type]
 
 
@@ -50,12 +77,16 @@ class FasterWhisperStreamTranscriber(StreamTranscriber):
         compute_type: str = "int8",
         language: str = "en",
         beam_size: int = 1,
+        min_rms: float = 250.0,  # <-- add
+        fallback_disable_thresholds: bool = True,  # <-- add
     ) -> None:
         self.model_size = model_size
         self.device = device
         self.compute_type = compute_type
         self.language = language
         self.beam_size = beam_size
+        self.min_rms = float(min_rms)
+        self.fallback_disable_thresholds = bool(fallback_disable_thresholds)
 
         self._model = None
 
@@ -71,6 +102,11 @@ class FasterWhisperStreamTranscriber(StreamTranscriber):
         return self._model
 
     def transcribe_chunk(self, chunk: AudioChunk) -> List[ASRSegment]:
+        # Energy gate: don't transcribe near-silence (prevents hallucinations)
+        rms = _pcm16_rms(chunk.pcm16)
+        if rms < self.min_rms:
+            return []
+
         model = self._get_model()
 
         fd, tmp_path = tempfile.mkstemp(suffix=".wav", prefix="itosub_mic_")
@@ -83,17 +119,37 @@ class FasterWhisperStreamTranscriber(StreamTranscriber):
                 channels=chunk.channels,
             )
 
+            # Pass 1: normal / conservative (reduces garbage)
             segments, _info = model.transcribe(
                 tmp_path,
                 language=self.language,
                 beam_size=self.beam_size,
                 vad_filter=False,
                 condition_on_previous_text=False,
+                temperature=0.0,
+                best_of=1,
             )
 
+            seg_list = list(segments)
+
+            # Pass 2 (fallback): if loud but got nothing, relax thresholds once
+            if self.fallback_disable_thresholds and len(seg_list) == 0:
+                segments2, _info2 = model.transcribe(
+                    tmp_path,
+                    language=self.language,
+                    beam_size=self.beam_size,
+                    vad_filter=False,
+                    condition_on_previous_text=False,
+                    temperature=0.0,
+                    best_of=1,
+                    no_speech_threshold=None,
+                    log_prob_threshold=None,
+                    compression_ratio_threshold=None,
+                )
+                seg_list = list(segments2)
+
             out: List[ASRSegment] = []
-            for s in segments:
-                # s.start / s.end are relative to the temp WAV (i.e., chunk-local)
+            for s in seg_list:
                 out.append(
                     _make_asr_segment(
                         start=chunk.start_time + float(s.start),

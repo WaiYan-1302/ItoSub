@@ -1,20 +1,18 @@
+# itosub/live/pipeline.py
 from __future__ import annotations
 
 from dataclasses import fields
-from typing import Callable, Iterable, List, Optional, Protocol
+from typing import Callable, Iterable, Protocol
 
-from itosub.contracts import ASRSegment, TranslationRequest
 from itosub.asr.stream_base import StreamTranscriber
-from itosub.contracts import AudioChunk
+from itosub.contracts import AudioChunk, TranslationRequest
 
 
 class Segmenter(Protocol):
-    def ingest(self, seg: ASRSegment) -> List[str]:
-        """Feed one ASR segment; return 0+ committed EN subtitle lines."""
+    def push(self, text: str, t0: float, t1: float):
         ...
 
-    def flush(self) -> List[str]:
-        """Force-commit remaining buffered text; return 0+ lines."""
+    def flush(self):
         ...
 
 
@@ -36,10 +34,6 @@ def _make_translation_request(text: str) -> TranslationRequest:
 
 
 class LiveMicTranslatePipeline:
-    """
-    Orchestrates: mic -> chunk -> ASR -> segmenter -> translator -> callback
-    """
-
     def __init__(
         self,
         *,
@@ -47,28 +41,51 @@ class LiveMicTranslatePipeline:
         transcriber: StreamTranscriber,
         segmenter: Segmenter,
         translator: Translator,
-        on_commit: Callable[[float, str, str], None],
+        on_commit: Callable[[float, str, str], None],  # (t1, en, ja)
+        flush_on_chunk_end: bool = True,              # <-- add
+        debug: bool = False,                          # <-- optional
     ) -> None:
         self.chunk_iter = chunk_iter
         self.transcriber = transcriber
         self.segmenter = segmenter
         self.translator = translator
         self.on_commit = on_commit
+        self.flush_on_chunk_end = flush_on_chunk_end
+        self.debug = debug
+
+    def _emit_line(self, t1: float, en: str) -> None:
+        req = _make_translation_request(en)
+        res = self.translator.translate(req)
+
+        ja = (
+                getattr(res, "translated_text", None)
+                or getattr(res, "text", None)
+                or str(res)
+        )
+
+        self.on_commit(t1, en, ja)
 
     def run(self) -> None:
-        for chunk in self.chunk_iter:
+        for i, chunk in enumerate(self.chunk_iter, start=1):
             asr_segments = self.transcriber.transcribe_chunk(chunk)
-            for seg in asr_segments:
-                committed_lines = self.segmenter.ingest(seg)
-                for line_en in committed_lines:
-                    req = _make_translation_request(line_en)
-                    res = self.translator.translate(req)
-                    # TranslationResult likely has `.text`; fall back to str(res)
-                    line_ja = getattr(res, "text", None) or str(res)
-                    self.on_commit(getattr(seg, "end", chunk.start_time + chunk.duration), line_en, line_ja)
 
-        for line_en in self.segmenter.flush():
-            req = _make_translation_request(line_en)
-            res = self.translator.translate(req)
-            line_ja = getattr(res, "text", None) or str(res)
-            self.on_commit(-1.0, line_en, line_ja)
+            if self.debug:
+                joined = " ".join((getattr(s, "text", "") or "").strip() for s in asr_segments).strip()
+                print(f"[debug] chunk#{i} asr_segments={len(asr_segments)} text='{joined}'")
+
+            for seg in asr_segments:
+                text = (getattr(seg, "text", "") or "").strip()
+                if not text:
+                    continue
+
+                t0 = float(getattr(seg, "t0", getattr(seg, "start", chunk.start_time)))
+                t1 = float(getattr(seg, "t1", getattr(seg, "end", chunk.start_time + chunk.duration)))
+
+                committed = self.segmenter.push(text=text, t0=t0, t1=t1)
+                for line in committed:
+                    self._emit_line(float(line.t1), line.text)
+
+            # Milestone 4 behavior: treat chunk as final
+            if self.flush_on_chunk_end:
+                for line in self.segmenter.flush():
+                    self._emit_line(float(line.t1), line.text)
