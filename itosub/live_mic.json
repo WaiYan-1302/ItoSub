@@ -1,0 +1,12 @@
+{
+  "device": 1,
+  "sr": 48000,
+  "channels": 1,
+  "chunk_sec": 0.5,
+  "rms_th": 180.0,
+  "silence_chunks": 2,
+  "min_utter_sec": 0.7,
+  "max_utter_sec": 999.0,
+  "model": "base",
+  "debug": false
+}

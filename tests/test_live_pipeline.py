@@ -1,20 +1,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List
+from typing import List
 
-from itosub.live.pipeline import LiveMicTranslatePipeline
 from itosub.asr.stream_base import StreamTranscriber
-from itosub.contracts import AudioChunk, ASRSegment, TranslationRequest
+from itosub.contracts import ASRSegment, AudioChunk, TranslationRequest
+from itosub.live.pipeline import LiveMicTranslatePipeline
 
-
-# --- fakes ---
 
 @dataclass(frozen=True)
 class FakeASRSegment:
-    start: float
-    end: float
+    t0: float
+    t1: float
     text: str
+
+
+@dataclass
+class FakeLine:
+    text: str
+    t0: float
+    t1: float
 
 
 class FakeTranscriber(StreamTranscriber):
@@ -23,41 +28,42 @@ class FakeTranscriber(StreamTranscriber):
 
     def transcribe_chunk(self, chunk: AudioChunk) -> List[ASRSegment]:
         segs = self.mapping.get(chunk.start_time, [])
-        # Convert to the project's ASRSegment type if needed.
-        out = []
-        for s in segs:
-            try:
-                out.append(ASRSegment(start=s.start, end=s.end, text=s.text))  # type: ignore
-            except TypeError:
-                # If ASRSegment has extra fields in your project, adjust here.
-                out.append(ASRSegment(text=s.text))  # type: ignore
-        return out
+        return [ASRSegment(text=s.text, t0=s.t0, t1=s.t1, is_final=True) for s in segs]
 
 
 class FakeSegmenter:
     def __init__(self):
-        self.buf = ""
+        self.buf: list[str] = []
+        self.t0: float | None = None
+        self.t1: float | None = None
 
-    def ingest(self, seg: ASRSegment) -> List[str]:
-        text = getattr(seg, "text", "")
-        if not text:
-            return []
-        if self.buf:
-            self.buf += " "
-        self.buf += text
+    def push(self, text: str, t0: float, t1: float) -> List[FakeLine]:
+        self.buf.append(text)
+        if self.t0 is None:
+            self.t0 = t0
+        self.t1 = t1
 
-        committed = []
-        if any(self.buf.endswith(p) for p in (".", "?", "!")):
-            committed.append(self.buf.strip())
-            self.buf = ""
-        return committed
-
-    def flush(self) -> List[str]:
-        if self.buf.strip():
-            out = [self.buf.strip()]
-            self.buf = ""
+        merged = " ".join(self.buf).strip()
+        if merged.endswith("."):
+            out = [FakeLine(text=merged, t0=self.t0, t1=self.t1)]
+            self.buf = []
+            self.t0 = None
+            self.t1 = None
             return out
         return []
+
+    def flush(self) -> List[FakeLine]:
+        if not self.buf or self.t0 is None or self.t1 is None:
+            self.buf = []
+            self.t0 = None
+            self.t1 = None
+            return []
+        merged = " ".join(self.buf).strip()
+        out = [FakeLine(text=merged, t0=self.t0, t1=self.t1)]
+        self.buf = []
+        self.t0 = None
+        self.t1 = None
+        return out
 
 
 class FakeTranslator:
@@ -92,6 +98,7 @@ def test_live_pipeline_commits_and_translates():
         segmenter=segmenter,
         translator=translator,
         on_commit=on_commit,
+        flush_on_chunk_end=False,
     )
 
     pipeline.run()
