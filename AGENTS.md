@@ -6,6 +6,8 @@
 - Milestone 5 runnable: WebRTC VAD + utterance chunker demo exists and remains a quality/perf baseline.
 - Milestone 6A/6B complete: PyQt overlay + live ASR/translation bridge are implemented.
 - Milestone 7 in progress: app runtime, tray, settings, config, and logging baseline are implemented.
+- Master branch has been synchronized with finalized `merge-test-into-master` content locally.
+- Professional `README.md` has been added/updated, including architecture, usage, testing, dependencies, and packaging notes.
 
 ## Locked Decisions
 - Never run faster-whisper per small live chunk.
@@ -58,7 +60,7 @@ python -m itosub.demos.demo_live_mic_translate_vad --device 1 --sr 48000 --chann
 ### Overlay behavior
 - Always-on-top, frameless, translucent.
 - Stacked JA/EN lines.
-- Hotkeys: `H` toggle EN, `+/-` font size, `P` pause, `ESC` quit.
+- Hotkeys: `H` toggle EN, `+/-` font size, `P` pause, `ESC` returns focus to main window (does not quit).
 - UI integration uses queue + `QTimer` polling on UI thread.
 
 ## Milestone 7 Roadmap (Windows-first)
@@ -92,10 +94,21 @@ python -m itosub.demos.demo_live_mic_translate_vad --device 1 --sr 48000 --chann
   - Start-time loading indicator implemented on overlay while worker/transcriber warmup runs; indicator hides when runtime is ready.
   - Translator product default is now `argos`; legacy `stub` values are auto-migrated to `argos` in app config loading.
   - Preset system implemented in Settings: built-in profiles + custom named presets saved from current settings.
+  - Main window mic tools finalized:
+    - `Test Mic` toggle behavior implemented; pressing again stops test and resets meter to zero.
+    - `Mic Test + Playback` implemented (up to 10s record, early-stop to playback, second-press stop) and resets meter to zero after stop/finish.
+    - Mic meter display runs only during explicit mic test actions.
+  - Branding updates implemented:
+    - Runtime app/tray icon uses `assets/image/ItoSubIcon.png`.
+    - Main window shows `assets/image/ItoSubTransparent.png` below mic meter.
+  - Packaging prep implemented:
+    - `ItoSub.spec` added.
+    - `assets/image/ItoSubIcon.ico` generated for EXE icon embedding.
+    - Frozen asset path handling updated to use `sys._MEIPASS`.
 - Pending:
   - 7C: diagnostics polish pass (expand hint coverage and add optional quick-copy/open-log actions in popup).
   - 7E: remaining settings polish (tooltip/help text and minor UX cleanup).
-  - 7F: packaging + installer script.
+  - 7F: installer/package finalization.
 
 ## Runtime and UX Notes for Future Agents
 - Keep ASR preload before any PyQt import in `itosub/app/main.py`.
@@ -114,6 +127,9 @@ python -m itosub.demos.demo_live_mic_translate_vad --device 1 --sr 48000 --chann
   - Translator note: do not expose `stub` in product Settings; keep runtime default as `argos`.
   - Preset persistence keys: `active_preset`, `custom_presets`.
   - Note: after changing `ui_language` in Settings and saving, reopen Settings dialog to see all labels in the new language.
+- Packaging notes:
+  - Keep `ItoSub.spec` icon configured to `assets/image/ItoSubIcon.ico`.
+  - For frozen runtime, asset root should resolve through `sys._MEIPASS` fallback.
 
 ## Known Environment Notes
 - `webrtcvad` may fail if `pkg_resources` is missing. If needed:
@@ -151,8 +167,11 @@ python -m itosub.demos.demo_live_mic_translate_vad --device 1 --sr 48000 --chann
 - Do not break Milestone 1-3 demos/tests.
 - Keep modules small and testable.
 - Prefer additive changes over rewrites.
+- Packaging command policy (user request):
+  - Do not run packaging/build commands unless user explicitly asks in that turn.
+  - User may run packaging commands manually in terminal.
 
 ## Next Priorities
 1. 7C diagnostics polish: add quick-copy/open-log actions and broader hint mapping.
-2. Prepare 7F packaging profile and installer checklist.
+2. Next goal: create Windows install package/installer (plan and document steps first; do not execute packaging yet unless user explicitly asks).
 3. Add small UX polish pass (settings tooltips + labels consistency).
