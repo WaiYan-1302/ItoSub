@@ -111,6 +111,7 @@ def _run_worker(
     args: Any,
     bus: SubtitleBus,
     stop_event: threading.Event,
+    on_ready: Any | None = None,
     logger: logging.Logger | None = None,
 ) -> None:
     from itosub.ui.overlay_qt import SubtitleLine
@@ -138,6 +139,19 @@ def _run_worker(
         sr=int(args.sr),
         chunk_sec=float(args.chunk_sec),
     )
+
+    # Warm transcriber model during startup to make first subtitle responsive.
+    warmup = getattr(services.transcriber, "warmup", None)
+    if callable(warmup):
+        t0 = time.perf_counter()
+        warmup()
+        _log_event(logger, logging.INFO, "worker_transcriber_warmup_done", ms=round((time.perf_counter() - t0) * 1000.0, 2))
+
+    if callable(on_ready):
+        try:
+            on_ready()
+        except Exception:
+            _log_event(logger, logging.WARNING, "worker_ready_callback_failed")
 
     def _translator_loop() -> None:
         while not stop_event.is_set():

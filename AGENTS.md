@@ -1,65 +1,12 @@
 # ItoSub Agent Guide
 
-## Project State (2026-02-25)
-- Milestone 4A complete: live mic ASR is stable with utterance finalization (no per-chunk decode).
-- Milestone 4B bridge complete: finalized ASR utterances can be translated live.
-- Milestone 5 in progress and runnable: WebRTC VAD + utterance chunker demo exists and runs.
-- Product decision: delay is acceptable if transcription quality is preserved.
+## Project State (2026-02-26)
+- Milestone 4A complete: live mic ASR stabilized with utterance finalization (no per-chunk decode).
+- Milestone 4B complete: finalized ASR utterances can be translated live.
+- Milestone 5 runnable: WebRTC VAD + utterance chunker demo exists and remains a quality/perf baseline.
+- Milestone 6A/6B complete: PyQt overlay + live ASR/translation bridge are implemented.
+- Milestone 7 in progress: app runtime, tray, settings, config, and logging baseline are implemented.
 
-## Milestone 6 (PyQt Overlay) ÅECurrent State
-
-### What Milestone 6 means
-- UI-only milestone: PyQt subtitle overlay.
-- Always-on-top, frameless, translucent background.
-- Shows JA (optionally EN) as stacked subtitle lines.
-- Supports hotkeys: toggle EN, font size +/-, pause, quit.
-- Exposes simple update API (e.g., `add_line(en, ja)`).
-
-### Completion status
-- Milestone 6A achieved: overlay module + smoke demo + minimal non-GUI test.
-- Milestone 6B achieved: live ASR/translation is wired to overlay via worker thread + queue + UI polling.
-
-### Milestone 6 code locations
-- `itosub/ui/overlay_qt.py`
-- `itosub/ui/bridge.py`
-- `itosub/demos/demo_overlay_smoke.py`
-- `itosub/demos/demo_live_overlay_translate.py`
-- `tests/test_overlay_format.py` (or equivalent non-GUI formatting test)
-- `tests/test_overlay_bridge.py`
-
-### Milestone 6 constraints
-- Do NOT start Milestone 6B unless explicitly requested.
-- Keep overlay module independent from ASR/translation logic.
-- Keep UI responsive; never run heavy work on Qt UI thread.
-- Keep Milestone 1ÅE demos/tests working.
-
-### Milestone 6B design (implemented)
-- ASR+translation runs in worker thread/process.
-- UI thread polls queue via `QTimer` and calls `overlay.add_line(...)`.
-- Command: `python -m itosub.demos.demo_live_overlay_translate --config itosub/live_mic.json --translator argos`
-
-### Milestone 6B latency tuning log (2026-02-25)
-- Root cause observed: overlay path felt slower than Milestone 5 when translation backlog built up.
-- Implementation update made in demo_live_overlay_translate.py:
-  - Added pre-translation SubtitleSegmenter commit flow (gap_sec, hard_max_chars) so translation is not called for every tiny ASR fragment.
-  - Added Milestone-5-style EN cleanup before translation (_dedupe_repeated_words, low-value fragment skip).
-  - Kept async translation mode (--async-translate) so EN can display first and JA arrives when ready.
-
-#### Commands tested and outcomes
-- Underperformed / unstable for this machine/session:
-  - python -m itosub.demos.demo_live_overlay_translate --config itosub/live_mic.json --translator argos --async-translate --silence-chunks 1 --gap-sec 0.8 --hard-max-chars 120
-  - Observation: first run could be barely transcribing/translation felt delayed.
-- Worked well after warmup:
-  - python -m itosub.demos.demo_live_overlay_translate --config itosub/live_mic.json --translator argos --async-translate --silence-chunks 1 --min-utter-sec 0.3 --gap-sec 0.8 --hard-max-chars 120 --poll-ms 30 --max-updates-per-tick 50
-  - Observation: good responsiveness and usable translation timing after second run.
-- Current preferred command (best balance, user-confirmed very good):
-  - python -m itosub.demos.demo_live_overlay_translate --config itosub/live_mic.json --translator argos --async-translate --silence-chunks 1 --gap-sec 0.8 --hard-max-chars 120 --poll-ms 30 --max-updates-per-tick 50
-  - Note: add --min-utter-sec 0.3 only when short phrases are being missed.
-
-#### Practical notes
-- First run is often slower due to model/translator warmup; evaluate latency from second run onward.
-- --poll-ms 30 and higher --max-updates-per-tick improved overlay catch-up behavior.
-- Keep --translator stub available for isolating UI/ASR timing from translation latency.
 ## Locked Decisions
 - Never run faster-whisper per small live chunk.
 - Always buffer into utterances and transcribe once per finalized utterance.
@@ -68,9 +15,26 @@
 - Do not disable whisper `no_speech_threshold` globally.
 
 ## Working Device and Presets
-- Mic device on this machine: `--device 1`.
+- Common working mic device on this machine: `--device 1`.
 
-### Quality-first ASR-only (delay allowed)
+## Current Preferred Translation Tuning (User-confirmed good)
+- Keep this as the default starting profile for live overlay translation quality on this machine.
+- First run can still be slower due to warmup; evaluate responsiveness from second run onward.
+
+### Preferred app command
+```powershell
+python -m itosub.app.main --device 1 --sr 48000 --model base --translator argos --async-translate --silence-chunks 1 --gap-sec 0.8 --hard-max-chars 120 --poll-ms 30 --max-updates-per-tick 50
+```
+
+### Optional adjustment
+- If short phrases are being missed, add:
+  - `--min-utter-sec 0.3`
+
+### Practical notes
+- Keep `--translator stub` available to isolate UI/ASR timing from translation latency.
+- `--poll-ms 30` and higher `--max-updates-per-tick` help overlay catch up when translation backlogs.
+
+### Quality-first ASR-only
 ```powershell
 python -m itosub.demos.demo_live_mic_transcribe --config itosub/live_mic.json
 ```
@@ -85,29 +49,78 @@ python -m itosub.demos.demo_live_mic_asr_translate --config itosub/live_mic.json
 python -m itosub.demos.demo_live_mic_translate_vad --device 1 --sr 48000 --channels 1 --chunk-sec 0.5 --model base --translator argos --vad 1 --frame-ms 20 --min-speech-ms 260 --end-silence-ms 750 --gap-sec 0.9 --hard-max-chars 140
 ```
 
-### Faster but lower quality profile
-```powershell
-python -m itosub.demos.demo_live_mic_translate_vad --device 1 --sr 16000 --channels 1 --chunk-sec 0.4 --model tiny --translator argos --vad 1 --frame-ms 20 --min-speech-ms 220 --end-silence-ms 550 --gap-sec 0.8 --hard-max-chars 120
-```
+## Milestone 6 (Overlay) Current State
+- Overlay module: `itosub/ui/overlay_qt.py`
+- Bridge module: `itosub/ui/bridge.py`
+- Live overlay demo compatibility wrapper: `itosub/demos/demo_live_overlay_translate.py`
+- Overlay tests: `tests/test_overlay_format.py`, `tests/test_overlay_bridge.py`
 
-## Current Milestone 5 Files
-- `itosub/audio/vad_webrtc.py`
-- `itosub/audio/utterance_chunker.py`
-- `itosub/demos/demo_live_mic_translate_vad.py`
+### Overlay behavior
+- Always-on-top, frameless, translucent.
+- Stacked JA/EN lines.
+- Hotkeys: `H` toggle EN, `+/-` font size, `P` pause, `ESC` quit.
+- UI integration uses queue + `QTimer` polling on UI thread.
+
+## Milestone 7 Roadmap (Windows-first)
+### Plan
+1. 7A1 Runtime extraction into `itosub/app/runtime.py` and services modules.
+2. 7A2 Product entrypoint in `itosub/app/main.py`.
+3. 7B Config system: defaults < user config < CLI.
+4. 7C Logging/crash diagnostics polish.
+5. 7D Tray integration and runtime controls.
+6. 7E Settings UX polish.
+7. 7F Windows packaging (PyInstaller one-folder first).
+
+### Execution Status (2026-02-26)
+- Completed:
+  - 7A1 runtime extraction done.
+  - 7A2 app entrypoint done (`python -m itosub.app.main`).
+  - 7B baseline config done (`itosub/app/config.py`, `assets/config/default.json`).
+  - 7D baseline tray done: Show App, Start/Stop, Pause/Resume, Show/Hide Overlay, Settings, Open Logs, Quit.
+  - 7E baseline settings done: sections + save/load + runtime apply/restart logic.
+  - Main window baseline done: status line, Start/Stop, Settings, Test Mic, mic meter card.
+  - Windows startup stability fix done: preload ASR runtime before PyQt import (avoids intermittent `torch c10.dll` `WinError 1114`).
+  - Audio/settings update done: real RMS mic meter monitor, input-device dropdown + refresh, overlay opacity + position preset controls.
+  - Settings overlay live preview implemented (style controls update preview immediately before Save).
+  - ASR language lock implemented end-to-end (`language_lock`: `auto|en`) across config, settings UI, services wiring, and tests.
+  - 7C diagnostics baseline implemented: UI popups now include concise error cause + hint + log path for ASR preload failures and worker crashes.
+  - Overlay interaction update implemented: resizable overlay, improved drag behavior (no accidental text selection while dragging), and selectable-text default set to off.
+  - Hotkeys are now user-editable via Settings (toggle EN, font +/-, pause, quit, toggle selectable text).
+  - User-facing naming updated in settings: "ASR" section shown as "Speech Recognition".
+  - UI language setting implemented (`ui_language`: `en|ja`) and wired to main window labels/status text.
+  - Mic meter display sensitivity reduced with display gain `0.4`.
+  - Start-time loading indicator implemented on overlay while worker/transcriber warmup runs; indicator hides when runtime is ready.
+  - Translator product default is now `argos`; legacy `stub` values are auto-migrated to `argos` in app config loading.
+  - Preset system implemented in Settings: built-in profiles + custom named presets saved from current settings.
+- Pending:
+  - 7C: diagnostics polish pass (expand hint coverage and add optional quick-copy/open-log actions in popup).
+  - 7E: remaining settings polish (tooltip/help text and minor UX cleanup).
+  - 7F: packaging + installer script.
+
+## Runtime and UX Notes for Future Agents
+- Keep ASR preload before any PyQt import in `itosub/app/main.py`.
+- Keep heavy ASR/translation off UI thread; UI only drains queue and updates widgets.
+- Overlay loading UX: show loading indicator during start/warmup to avoid blank-box confusion, then hide on worker-ready signal.
+- Keep overlay module independent from ASR/translation logic.
+- Keep overlay position behavior:
+  - presets: `bottom_center`, `bottom_left`, `top_center`
+  - `custom` should preserve dragged position.
+- Config keys added for overlay controls:
+  - `overlay_opacity` (0-100)
+  - `overlay_position` (`bottom_center|bottom_left|top_center|custom`)
+  - `overlay_text_selectable` (default `false`)
+  - editable hotkeys: `hotkey_toggle_en`, `hotkey_font_inc`, `hotkey_font_dec`, `hotkey_pause`, `hotkey_quit`, `hotkey_toggle_selectable`
+  - `ui_language` (`en|ja`) for app UI language
+  - Translator note: do not expose `stub` in product Settings; keep runtime default as `argos`.
+  - Preset persistence keys: `active_preset`, `custom_presets`.
+  - Note: after changing `ui_language` in Settings and saving, reopen Settings dialog to see all labels in the new language.
 
 ## Known Environment Notes
 - `webrtcvad` may fail if `pkg_resources` is missing. If needed:
   - `python -m pip install --force-reinstall "setuptools<81"`
   - or install `webrtcvad-wheels`.
-- HuggingFace symlink warning on Windows is non-fatal. Optional suppress:
-  - `$env:HF_HUB_DISABLE_SYMLINKS_WARNING="1"`
+- HuggingFace symlink warning on Windows is non-fatal.
 - Argos warning about `mwt` is informational and non-fatal.
-
-## Performance Reality
-- First run is slow due to model warmup/loading.
-- `--model base/small` improves ASR quality but increases latency.
-- `--translator argos` adds noticeable per-line latency.
-- For responsiveness debugging, use `--translator stub`.
 
 ## Scope Rules
 ### Allowed read/write
@@ -139,61 +152,7 @@ python -m itosub.demos.demo_live_mic_translate_vad --device 1 --sr 16000 --chann
 - Keep modules small and testable.
 - Prefer additive changes over rewrites.
 
-## Milestone 7 Roadmap (Windows-first)
-### Plan (approved)
-1. 7A1 Runtime extraction: move live overlay worker/pipeline logic from demo into itosub.app runtime/services modules.
-2. 7A2 Product entrypoint: add itosub/app/main.py as official app startup path; keep demo command as compatibility wrapper.
-3. 7B Config system: defaults in assets/config/default.json; user config in %APPDATA%\\ItoSub\\config.json; precedence = defaults < user config < CLI.
-4. 7C Logging/crash diagnostics: next step (pending).
-5. 7D Tray integration: next step (pending).
-6. 7E Minimal settings UI: recommended before packaging (pending).
-7. 7F Windows packaging: PyInstaller one-folder first (pending).
-
-### Execution Status (2026-02-25)
-- Completed now:
-  - 7A1 implemented (itosub/app/runtime.py, itosub/app/services.py).
-  - 7A2 implemented (itosub/app/main.py, runnable via python -m itosub.app.main).
-  - 7B implemented baseline (itosub/app/config.py, assets/config/default.json).
-  - itosub/demos/demo_live_overlay_translate.py now delegates to app entrypoint while preserving test helper exports.
-- Pending next:
-  - 7C logging file/rotation + latency metrics fields.
-  - 7D tray icon actions (Pause/Show/Hide/Open Logs/Quit).
-  - 7E settings dialog + config save flow.
-  - 7F packaging + installer script.
-## Milestone 7 UX Direction (2026-02-25, approved)
-### Product flow decision
-- Chosen flow for v1: Option B + tray integration.
-- Startup shows a minimal main window with Start, Settings, Test Mic, status line, and mic meter.
-- On Start: launch overlay + live pipeline, then minimize main window to tray.
-- Tray menu (v1): Start/Stop, Pause/Resume, Settings, Quit.
-
-### UX/visual direction
-- Modern minimalist dark UI.
-- Settings-first experience after first launch, but no wizard required for v1.
-- Settings dialog layout: left sidebar + right content panel.
-- Sidebar sections: Audio, ASR, Translation, Overlay, Hotkeys, Advanced.
-- Right panel includes controls + small live overlay preview.
-- Footer buttons: Restore Defaults, Cancel, Save.
-
-### v1 settings scope (must-have only)
-- Audio: device selection, refresh, input level meter, sensitivity.
-- ASR: model size (tiny/base/small), language lock (auto/en).
-- Translation: provider (Argos), join-fragments-before-translation toggle.
-- Overlay: background opacity, JP font size, show EN toggle, position preset.
-
-### Runtime and implementation notes
-- Introduce explicit runtime states: stopped, starting, running, paused, error.
-- Keep one config schema source of truth in itosub.app.config with migration-safe defaults.
-- Keep overlay as separate window (frameless, always-on-top, draggable).
-
-### Planned implementation order (next session)
-1. 7D tray controller and runtime state actions.
-2. 7E settings dialog with save/load bindings.
-3. Main window polish (status + mic meter + Start/Test Mic).
-4. 7C structured logging surfaced in UI.
-5. 7F Windows packaging.
 ## Next Priorities
-1. Keep Milestone 5 stable and tune VAD/commit parameters for quality.
-2. Add optional async translation mode so EN prints immediately and JA arrives later.
-3. Add repeatable evaluation checklist (missed words, latency, false triggers).
-4. Improve overlay UX polish and add integration smoke checks for the live overlay path.
+1. 7C diagnostics polish: add quick-copy/open-log actions and broader hint mapping.
+2. Prepare 7F packaging profile and installer checklist.
+3. Add small UX polish pass (settings tooltips + labels consistency).

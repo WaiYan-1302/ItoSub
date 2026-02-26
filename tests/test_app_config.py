@@ -8,9 +8,16 @@ from itosub.app import config as app_config
 
 def test_load_default_config_contains_expected_keys() -> None:
     cfg = app_config.load_default_config()
-    assert cfg["translator"] in {"stub", "argos"}
+    assert cfg["translator"] == "argos"
+    assert cfg["language_lock"] in {"auto", "en"}
+    assert cfg["ui_language"] in {"en", "ja"}
+    assert "overlay_text_selectable" in cfg
+    assert "hotkey_toggle_en" in cfg
+    assert "hotkey_toggle_selectable" in cfg
     assert "poll_ms" in cfg
     assert "gap_sec" in cfg
+    assert "overlay_opacity" in cfg
+    assert "overlay_position" in cfg
 
 
 def test_resolve_defaults_uses_explicit_config(tmp_path: Path) -> None:
@@ -42,6 +49,16 @@ def test_load_user_config_ignores_unknown_keys(tmp_path: Path) -> None:
     assert loaded["sr"] == 48000
     assert loaded["translator"] == "argos"
     assert "unexpected" not in loaded
+
+
+def test_load_user_config_migrates_stub_to_argos(tmp_path: Path) -> None:
+    cfg_path = tmp_path / "user.json"
+    cfg_path.write_text(
+        json.dumps({"translator": "stub"}),
+        encoding="utf-8",
+    )
+    loaded, _ = app_config.load_user_config(str(cfg_path))
+    assert loaded["translator"] == "argos"
 
 
 def test_save_user_config_merges_and_filters_keys(tmp_path: Path) -> None:

@@ -4,13 +4,24 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d57ff9d3-5eec-435c-95bf-610b26381957" name="Changes" comment="Milestone 5 ver 0.5.3">
+    <list default="true" id="d57ff9d3-5eec-435c-95bf-610b26381957" name="Changes" comment="Milestone 7 ver 0.7.4">
+      <change afterPath="$PROJECT_DIR$/assets/image/ItoSubIcon.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/image/ItoSubTransparent.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AGENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/AGENTS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/itosub/demos/demo_overlay_smoke.py" beforeDir="false" afterPath="$PROJECT_DIR$/itosub/demos/demo_overlay_smoke.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/itosub/ui/bridge.py" beforeDir="false" afterPath="$PROJECT_DIR$/itosub/ui/bridge.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/config/default.json" beforeDir="false" afterPath="$PROJECT_DIR$/assets/config/default.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/itosub/app/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/itosub/app/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/itosub/app/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/itosub/app/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/itosub/app/main_window_qt.py" beforeDir="false" afterPath="$PROJECT_DIR$/itosub/app/main_window_qt.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/itosub/app/runtime.py" beforeDir="false" afterPath="$PROJECT_DIR$/itosub/app/runtime.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/itosub/app/services.py" beforeDir="false" afterPath="$PROJECT_DIR$/itosub/app/services.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/itosub/app/settings_qt.py" beforeDir="false" afterPath="$PROJECT_DIR$/itosub/app/settings_qt.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/itosub/asr/faster_whisper_pcm16.py" beforeDir="false" afterPath="$PROJECT_DIR$/itosub/asr/faster_whisper_pcm16.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/itosub/nlp/translator/factory.py" beforeDir="false" afterPath="$PROJECT_DIR$/itosub/nlp/translator/factory.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/itosub/ui/overlay_qt.py" beforeDir="false" afterPath="$PROJECT_DIR$/itosub/ui/overlay_qt.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_app_config.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_app_config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_app_main_args.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_app_main_args.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_factory.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_factory.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_overlay_format.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_overlay_format.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -19,7 +30,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="87" />
+    <option name="cachedIndexableFilesCount" value="2924" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -31,6 +42,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
+        <entry key="$PROJECT_DIR$" value="master" />
         <entry key="$PROJECT_DIR$" value="master" />
       </map>
     </option>
@@ -52,6 +64,9 @@
     <commands />
     <urls />
   </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
 }</component>
@@ -71,6 +86,7 @@
     "ai.playground.ignore.import.keys.banner.in.settings": "true",
     "git-widget-placeholder": "test",
     "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/user/PycharmProjects/Itosub/assets/image",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -81,6 +97,9 @@
   }
 }]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\user\PycharmProjects\Itosub\assets\image" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\user\PycharmProjects\Itosub\itosub" />
       <recent name="C:\Users\user\PycharmProjects\Itosub" />
@@ -116,7 +135,7 @@
       <workItem from="1772026456499" duration="1417000" />
       <workItem from="1772027900122" duration="3128000" />
       <workItem from="1772084302953" duration="2830000" />
-      <workItem from="1772088245634" duration="1939000" />
+      <workItem from="1772088245634" duration="20412000" />
     </task>
     <task id="LOCAL-00001" summary="Milestone 2 ver 0.2.001">
       <option name="closed" value="true" />
@@ -182,7 +201,15 @@
       <option name="project" value="LOCAL" />
       <updated>1772015776937</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Milestone 7 ver 0.7.4">
+      <option name="closed" value="true" />
+      <created>1772091654595</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1772091654595</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -204,7 +231,8 @@
     <MESSAGE value="Milestone 3 ver 0.3.002" />
     <MESSAGE value="Milestone 4 ver 0.4.001" />
     <MESSAGE value="Milestone 5 ver 0.5.3" />
-    <option name="LAST_COMMIT_MESSAGE" value="Milestone 5 ver 0.5.3" />
+    <MESSAGE value="Milestone 7 ver 0.7.4" />
+    <option name="LAST_COMMIT_MESSAGE" value="Milestone 7 ver 0.7.4" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

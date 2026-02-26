@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import os
 from dataclasses import dataclass
@@ -29,13 +30,24 @@ DEFAULTS: dict[str, Any] = {
     "min_utter_sec": 0.6,
     "max_utter_sec": 6.0,
     "debug": False,
+    "ui_language": "en",
     "model": "tiny",
-    "translator": "stub",
+    "language_lock": "auto",
+    "translator": "argos",
     "show_en": True,
     "max_lines": 4,
     "font_size_ja": 28,
     "font_size_en": 16,
     "padding_px": 14,
+    "overlay_text_selectable": False,
+    "hotkey_toggle_en": "H",
+    "hotkey_font_inc": "+",
+    "hotkey_font_dec": "-",
+    "hotkey_pause": "P",
+    "hotkey_quit": "Esc",
+    "hotkey_toggle_selectable": "T",
+    "overlay_opacity": 66,
+    "overlay_position": "bottom_center",
     "poll_ms": 60,
     "queue_maxsize": 100,
     "max_updates_per_tick": 20,
@@ -43,6 +55,8 @@ DEFAULTS: dict[str, Any] = {
     "async_translate": True,
     "gap_sec": 0.9,
     "hard_max_chars": 140,
+    "active_preset": "Balanced (Recommended)",
+    "custom_presets": {},
 }
 CONFIG_KEYS: tuple[str, ...] = tuple(DEFAULTS.keys())
 
@@ -63,7 +77,8 @@ def app_paths() -> AppPaths:
 
 
 def _load_json_dict(path: Path) -> dict[str, Any]:
-    with path.open("r", encoding="utf-8") as f:
+    # Accept UTF-8 with or without BOM for Windows-edited config files.
+    with path.open("r", encoding="utf-8-sig") as f:
         loaded = json.load(f)
     if not isinstance(loaded, dict):
         raise ValueError(f"config must be a JSON object: {path}")
@@ -88,9 +103,9 @@ def _known_only(payload: dict[str, Any]) -> dict[str, Any]:
 def load_default_config() -> dict[str, Any]:
     path = default_asset_config_path()
     if not path.exists():
-        return dict(DEFAULTS)
+        return copy.deepcopy(DEFAULTS)
     loaded = _load_json_dict(path)
-    out = dict(DEFAULTS)
+    out = copy.deepcopy(DEFAULTS)
     for key in DEFAULTS.keys():
         if key in loaded:
             out[key] = loaded[key]
@@ -106,17 +121,23 @@ def load_user_config(config_path: str | None = None) -> tuple[dict[str, Any], Pa
         loaded = _known_only(_load_json_dict(chosen))
         merged = dict(defaults)
         merged.update(loaded)
+        if str(merged.get("translator", "")).lower() == "stub":
+            merged["translator"] = "argos"
         return merged, chosen
 
     chosen = ensure_user_config_exists(defaults)
     loaded = _known_only(_load_json_dict(chosen))
     merged = dict(defaults)
     merged.update(loaded)
+    if str(merged.get("translator", "")).lower() == "stub":
+        merged["translator"] = "argos"
     return merged, chosen
 
 
 def save_user_config(values: dict[str, Any], config_path: str | None = None) -> Path:
     payload = _known_only(values)
+    if str(payload.get("translator", "")).lower() == "stub":
+        payload["translator"] = "argos"
     if config_path:
         path = Path(config_path)
         existing = _known_only(_load_json_dict(path)) if path.exists() else {}
@@ -176,8 +197,20 @@ def parser_with_defaults(defaults: dict[str, Any]) -> argparse.ArgumentParser:
         help="force finalize while continuously speaking (seconds)",
     )
     p.add_argument("--debug", action="store_true", help="print chunk RMS and speech decisions")
+    p.add_argument(
+        "--ui-language",
+        default=defaults["ui_language"],
+        choices=["en", "ja"],
+        help="UI language: English or Japanese",
+    )
     p.add_argument("--model", default=defaults["model"], help="faster-whisper model size")
-    p.add_argument("--translator", default=defaults["translator"], help="stub|argos")
+    p.add_argument(
+        "--language-lock",
+        default=defaults["language_lock"],
+        choices=["auto", "en"],
+        help="ASR language lock: auto detect or force English",
+    )
+    p.add_argument("--translator", default=defaults["translator"], help="argos")
     p.add_argument(
         "--show-en",
         action=argparse.BooleanOptionalAction,
@@ -188,6 +221,34 @@ def parser_with_defaults(defaults: dict[str, Any]) -> argparse.ArgumentParser:
     p.add_argument("--font-size-ja", type=int, default=defaults["font_size_ja"], help="Japanese font size")
     p.add_argument("--font-size-en", type=int, default=defaults["font_size_en"], help="English font size")
     p.add_argument("--padding-px", type=int, default=defaults["padding_px"], help="overlay panel padding")
+    p.add_argument(
+        "--overlay-text-selectable",
+        action=argparse.BooleanOptionalAction,
+        default=defaults["overlay_text_selectable"],
+        help="allow selecting/copying overlay text",
+    )
+    p.add_argument("--hotkey-toggle-en", default=defaults["hotkey_toggle_en"], help="hotkey: toggle EN line")
+    p.add_argument("--hotkey-font-inc", default=defaults["hotkey_font_inc"], help="hotkey: increase font size")
+    p.add_argument("--hotkey-font-dec", default=defaults["hotkey_font_dec"], help="hotkey: decrease font size")
+    p.add_argument("--hotkey-pause", default=defaults["hotkey_pause"], help="hotkey: pause/resume overlay")
+    p.add_argument("--hotkey-quit", default=defaults["hotkey_quit"], help="hotkey: quit app")
+    p.add_argument(
+        "--hotkey-toggle-selectable",
+        default=defaults["hotkey_toggle_selectable"],
+        help="hotkey: toggle text selectable mode",
+    )
+    p.add_argument(
+        "--overlay-opacity",
+        type=int,
+        default=defaults["overlay_opacity"],
+        help="overlay background opacity (0-100)",
+    )
+    p.add_argument(
+        "--overlay-position",
+        default=defaults["overlay_position"],
+        choices=["bottom_center", "bottom_left", "top_center", "custom"],
+        help="overlay position preset",
+    )
     p.add_argument("--poll-ms", type=int, default=defaults["poll_ms"], help="UI queue poll interval (ms)")
     p.add_argument(
         "--queue-maxsize",

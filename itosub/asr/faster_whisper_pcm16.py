@@ -44,6 +44,10 @@ class FasterWhisperPCM16Transcriber:
             )
         return self._model
 
+    def warmup(self) -> None:
+        # Preload model so first utterance does not pay model init cost.
+        _ = self._get_model()
+
     def transcribe_utterance(
         self,
         pcm16: bytes,

@@ -27,7 +27,9 @@ def build_live_overlay_services(args: Any) -> LiveOverlayServices:
         device=args.device,
     )
     vad = EnergyVAD(rms_threshold=float(args.rms_th))
-    transcriber = FasterWhisperPCM16Transcriber(model_size=str(args.model), language="en")
+    language_lock = str(getattr(args, "language_lock", "auto")).strip().lower()
+    language = None if language_lock == "auto" else "en"
+    transcriber = FasterWhisperPCM16Transcriber(model_size=str(args.model), language=language)
     translator = get_translator(str(args.translator))
     segmenter = SubtitleSegmenter(
         gap_sec=max(0.0, float(args.gap_sec)),
