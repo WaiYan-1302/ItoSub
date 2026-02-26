@@ -1,6 +1,6 @@
 # ItoSub
 
-<img src="assets/image/ItoSubIcon.png" alt="ItoSub Icon" width="120" />
+<img src="assets/image/ItoSubIcon.png" alt="ItoSub Icon" width="220" />
 
 Real-time speech subtitle overlay app for Windows, built with Python and PyQt6.
 
