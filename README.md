@@ -1,6 +1,8 @@
 # ItoSub
 
-<img src="assets/image/ItoSubIcon.png" alt="ItoSub Icon" width="120" />
+<p align="center">
+	<img src="assets/image/ItoSubTransparentHeader.png" alt="ItoSub Transparent Header" width="420" />
+</p>
 
 Real-time speech subtitle overlay app for Windows, built with Python and PyQt6.
 
@@ -260,4 +262,6 @@ If taskbar icon appears stale after rebuild, unpin old shortcut and pin the newl
 - Keep contracts in `itosub/contracts.py` stable (`ASRSegment` uses `t0`/`t1`).
 - Avoid breaking existing demos/tests (`pytest -q` before PR/merge).
 
-<img src="assets/image/ItoSubTransparent.png" alt="ItoSub Transparent" width="320" />
+<p align="center">
+	<img src="assets/image/ItoSubIconHeader.png" alt="ItoSub Icon Header" width="180" />
+</p>
