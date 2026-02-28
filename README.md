@@ -11,10 +11,10 @@ ItoSub captures microphone input, detects speech, transcribes finalized utteranc
 ## Download
 
 <p align="center">
-  <a href="./releases/latest">
+  <a href="https://github.com/WaiYan-1302/ItoSub/releases/latest">
     <img alt="Latest Release" src="https://img.shields.io/badge/Latest_Release-ItoSub-0A7F5A?style=for-the-badge" />
   </a>
-  <a href="./releases/latest/download/ItoSub-Setup.exe">
+  <a href="https://github.com/WaiYan-1302/ItoSub/releases/latest/download/ItoSub-Setup.exe">
     <img alt="Download Installer" src="https://img.shields.io/badge/Download-ItoSub--Setup.exe-0F172A?style=for-the-badge" />
   </a>
 </p>
@@ -26,9 +26,12 @@ ItoSub captures microphone input, detects speech, transcribes finalized utteranc
 
 Quick install:
 
-1. Open <a href="./releases/latest">Latest Release</a>.
+1. Open <a href="https://github.com/WaiYan-1302/ItoSub/releases/latest">Latest Release</a>.
 2. Download <code>ItoSub-Setup.exe</code>.
 3. Run the installer and launch ItoSub from Start Menu.
+
+Direct link for current release (`v1.0.2`):
+<a href="https://github.com/WaiYan-1302/ItoSub/releases/download/v1.0.2/ItoSub-Setup.exe">ItoSub-Setup.exe</a>
 
 ## Features
 
