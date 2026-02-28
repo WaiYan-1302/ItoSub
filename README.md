@@ -8,6 +8,28 @@ Real-time speech subtitle overlay app for Windows, built with Python and PyQt6.
 
 ItoSub captures microphone input, detects speech, transcribes finalized utterances with Whisper (faster-whisper), translates to Japanese with Argos, and renders live subtitles in an always-on-top overlay.
 
+## Download
+
+<p align="center">
+  <a href="./releases/latest">
+    <img alt="Latest Release" src="https://img.shields.io/badge/Latest_Release-ItoSub-0A7F5A?style=for-the-badge" />
+  </a>
+  <a href="./releases/latest/download/ItoSub-Setup.exe">
+    <img alt="Download Installer" src="https://img.shields.io/badge/Download-ItoSub--Setup.exe-0F172A?style=for-the-badge" />
+  </a>
+</p>
+
+<p align="center">
+  <b>Windows 10/11 (x64)</b><br/>
+  Installer package: <code>ItoSub-Setup.exe</code>
+</p>
+
+Quick install:
+
+1. Open <a href="./releases/latest">Latest Release</a>.
+2. Download <code>ItoSub-Setup.exe</code>.
+3. Run the installer and launch ItoSub from Start Menu.
+
 ## Features
 
 - Live microphone capture with utterance-based finalization (not per-chunk decode).
@@ -236,6 +258,39 @@ Output:
 
 If taskbar icon appears stale after rebuild, unpin old shortcut and pin the newly launched executable again.
 
+## Installer Package (Windows, Inno Setup)
+
+Installer script:
+
+- `installer/ItoSub.iss`
+
+Manual steps:
+
+1. Build the one-folder app with PyInstaller.
+2. Smoke-test `dist/ItoSub/ItoSub.exe`.
+3. Compile the installer:
+
+```powershell
+iscc installer\ItoSub.iss
+```
+
+Installer output:
+
+- `dist/installer/ItoSub-Setup.exe`
+
+Current installer baseline:
+
+- per-user install to `%LOCALAPPDATA%\Programs\ItoSub`
+- Start Menu shortcut
+- optional desktop shortcut
+- uninstall entry
+- uses `assets/image/ItoSubIcon.ico` for installer and shortcut icon
+- detects VC++ runtime and can bootstrap `vc_redist.x64.exe` when bundled
+
+VC++ bundle path (optional, recommended):
+
+- `installer/prereqs/vc_redist.x64.exe`
+
 ## Troubleshooting
 
 ## ASR runtime init failure (torch/ctranslate2/faster-whisper)
@@ -263,5 +318,5 @@ If taskbar icon appears stale after rebuild, unpin old shortcut and pin the newl
 - Avoid breaking existing demos/tests (`pytest -q` before PR/merge).
 
 <p align="center">
-	<img src="assets/image/ItoSubIconHeader.png" alt="ItoSub Icon Header" width="180" />
+	<img src="assets/image/ItoSubIconHeader.png" alt="ItoSub Icon Header" width="280" />
 </p>
