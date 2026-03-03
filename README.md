@@ -45,6 +45,20 @@ Direct link for current release (`v1.0.2`):
 - Presets and custom preset save/load.
 - Mic test and mic test+playback tooling.
 
+## App Screenshots
+
+### Home Window
+
+<p align="center">
+  <img src="assets/image/ItoSubHome.png" alt="ItoSub Home Window" width="900" />
+</p>
+
+### Settings Window
+
+<p align="center">
+  <img src="assets/image/ItoSubSetting.png" alt="ItoSub Settings Window" width="900" />
+</p>
+
 ## Current Status
 
 Milestones 4-6 are complete; Milestone 7 is in progress with app runtime, tray, settings, and diagnostics baseline implemented.
