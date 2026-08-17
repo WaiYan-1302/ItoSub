@@ -57,16 +57,24 @@ def merge_subtitle_line(
         ):
             return out[-max(1, int(max_lines)):]
 
-    # Async EN-first then JA-later path: replace pending line instead of appending.
-    if new_line.ja:
-        for i in range(len(out) - 1, -1, -1):
-            prev = out[i]
-            same_en = (prev.en or "").strip() == (new_line.en or "").strip()
-            pending_ja = not (prev.ja or "").strip()
-            same_time = (prev.t0 == new_line.t0 and prev.t1 == new_line.t1)
-            if same_en and pending_ja and same_time:
-                out[i] = new_line
-                return out[-max(1, int(max_lines)):]
+    # Async source-first then translated-later path: replace pending line for
+    # either EN->JA or JA->EN instead of appending a duplicate.
+    for i in range(len(out) - 1, -1, -1):
+        prev = out[i]
+        same_time = prev.t0 == new_line.t0 and prev.t1 == new_line.t1
+        fills_ja = (
+            (prev.en or "").strip() == (new_line.en or "").strip()
+            and not (prev.ja or "").strip()
+            and bool((new_line.ja or "").strip())
+        )
+        fills_en = (
+            (prev.ja or "").strip() == (new_line.ja or "").strip()
+            and not (prev.en or "").strip()
+            and bool((new_line.en or "").strip())
+        )
+        if same_time and (fills_ja or fills_en):
+            out[i] = new_line
+            return out[-max(1, int(max_lines)):]
 
     out.append(new_line)
     return out[-max(1, int(max_lines)):]

@@ -22,7 +22,7 @@ _PUNCT_END = re.compile(r"[.!?]$")
 class _TranslateJob:
     t0: float
     t1: float
-    en: str
+    source_text: str
 
 
 def _drain_subtitle_bus(bus: SubtitleBus, overlay: Any, max_items: int) -> int:
@@ -55,10 +55,12 @@ def _dedupe_repeated_words(text: str, max_repeat: int = 2) -> str:
     return " ".join(out).strip()
 
 
-def _is_low_value_fragment(text: str) -> bool:
+def _is_low_value_fragment(text: str, source_lang: str = "en") -> bool:
     t = text.strip()
     if not t:
         return True
+    if source_lang == "ja":
+        return len(t) < 2
     words = t.split()
     if len(words) == 1 and not _PUNCT_END.search(t):
         return True
@@ -67,10 +69,30 @@ def _is_low_value_fragment(text: str) -> bool:
     return False
 
 
-def _translate_text(translator: Any, en: str) -> str:
-    req = TranslationRequest(text=en, source_lang="en", target_lang="ja")
+def _translate_text(
+    translator: Any,
+    text: str,
+    source_lang: str = "en",
+    target_lang: str = "ja",
+) -> str:
+    req = TranslationRequest(text=text, source_lang=source_lang, target_lang=target_lang)
     res = translator.translate(req)
     return str(getattr(res, "translated_text", None) or getattr(res, "text", None) or res)
+
+
+def _subtitle_line(
+    source_text: str,
+    translated_text: str,
+    source_lang: str,
+    *,
+    t0: float,
+    t1: float,
+) -> Any:
+    from itosub.ui.overlay_qt import SubtitleLine
+
+    if source_lang == "ja":
+        return SubtitleLine(en=translated_text, ja=source_text, t0=t0, t1=t1)
+    return SubtitleLine(en=source_text, ja=translated_text, t0=t0, t1=t1)
 
 
 def _queue_put_drop_oldest(q: "queue.Queue[_TranslateJob]", item: _TranslateJob) -> bool:
@@ -94,11 +116,15 @@ def _iter_committed_lines(
     t0: float,
     t1: float,
     text: str,
+    source_lang: str = "en",
 ) -> Iterable[tuple[float, float, str]]:
-    en = _dedupe_repeated_words((text or "").strip(), max_repeat=2)
-    if _is_low_value_fragment(en):
+    source_text = _dedupe_repeated_words((text or "").strip(), max_repeat=2)
+    if _is_low_value_fragment(source_text, source_lang=source_lang):
         return ()
-    return ((float(line.t0), float(line.t1), str(line.text)) for line in segmenter.push(en, t0, t1))
+    return (
+        (float(line.t0), float(line.t1), str(line.text))
+        for line in segmenter.push(source_text, t0, t1)
+    )
 
 
 def _log_event(logger: logging.Logger | None, level: int, event: str, **fields: Any) -> None:
@@ -114,13 +140,15 @@ def _run_worker(
     on_ready: Any | None = None,
     logger: logging.Logger | None = None,
 ) -> None:
-    from itosub.ui.overlay_qt import SubtitleLine
-
     services = build_live_overlay_services(args)
     mic = services.mic
     translator = services.translator
     segmenter = services.segmenter
     jobs: "queue.Queue[_TranslateJob]" = queue.Queue(maxsize=200)
+    source_lang = str(getattr(args, "caption_language", "en")).strip().lower()
+    if source_lang not in ("en", "ja"):
+        source_lang = "en"
+    target_lang = "ja" if source_lang == "en" else "en"
     metrics: dict[str, int | float] = {
         "en_commits": 0,
         "ja_commits": 0,
@@ -138,6 +166,7 @@ def _run_worker(
         async_translate=bool(args.async_translate),
         sr=int(args.sr),
         chunk_sec=float(args.chunk_sec),
+        caption_language=source_lang,
     )
 
     # Warm transcriber model during startup to make first subtitle responsive.
@@ -160,7 +189,7 @@ def _run_worker(
             except queue.Empty:
                 continue
             t0 = time.perf_counter()
-            ja = _translate_text(translator, job.en)
+            translated = _translate_text(translator, job.source_text, source_lang, target_lang)
             dur_ms = (time.perf_counter() - t0) * 1000.0
             metrics["translate_samples"] = int(metrics["translate_samples"]) + 1
             metrics["translate_ms_total"] = float(metrics["translate_ms_total"]) + dur_ms
@@ -171,13 +200,21 @@ def _run_worker(
                 "translate_async_done",
                 t0=job.t0,
                 t1=job.t1,
-                chars_en=len(job.en),
+                chars_source=len(job.source_text),
                 ms=round(dur_ms, 2),
                 queue_depth=jobs.qsize(),
             )
             if args.print_console:
-                print(f"[utt {job.t0:.2f}-{job.t1:.2f}] JA: {ja}")
-            bus.push(SubtitleLine(en=job.en, ja=ja, t0=job.t0, t1=job.t1))
+                print(f"[utt {job.t0:.2f}-{job.t1:.2f}] {target_lang.upper()}: {translated}")
+            bus.push(
+                _subtitle_line(
+                    job.source_text,
+                    translated,
+                    source_lang,
+                    t0=job.t0,
+                    t1=job.t1,
+                )
+            )
 
     if args.async_translate:
         threading.Thread(
@@ -187,13 +224,20 @@ def _run_worker(
         ).start()
 
     def _on_asr(t0: float, t1: float, text: str) -> None:
-        for line_t0, line_t1, en in _iter_committed_lines(segmenter, t0, t1, text):
+        for line_t0, line_t1, source_text in _iter_committed_lines(
+            segmenter, t0, t1, text, source_lang=source_lang
+        ):
             metrics["en_commits"] = int(metrics["en_commits"]) + 1
             if args.print_console:
-                print(f"[utt {line_t0:.2f}-{line_t1:.2f}] EN: {en}")
+                print(f"[utt {line_t0:.2f}-{line_t1:.2f}] {source_lang.upper()}: {source_text}")
             if args.async_translate:
-                bus.push(SubtitleLine(en=en, ja="", t0=line_t0, t1=line_t1))
-                dropped = _queue_put_drop_oldest(jobs, _TranslateJob(t0=line_t0, t1=line_t1, en=en))
+                bus.push(
+                    _subtitle_line(source_text, "", source_lang, t0=line_t0, t1=line_t1)
+                )
+                dropped = _queue_put_drop_oldest(
+                    jobs,
+                    _TranslateJob(t0=line_t0, t1=line_t1, source_text=source_text),
+                )
                 if dropped:
                     metrics["queue_drops"] = int(metrics["queue_drops"]) + 1
                     _log_event(
@@ -202,7 +246,7 @@ def _run_worker(
                         "translate_queue_drop_oldest",
                         t0=line_t0,
                         t1=line_t1,
-                        chars_en=len(en),
+                        chars_source=len(source_text),
                         queue_depth=jobs.qsize(),
                     )
                 else:
@@ -212,12 +256,12 @@ def _run_worker(
                         "translate_async_enqueued",
                         t0=line_t0,
                         t1=line_t1,
-                        chars_en=len(en),
+                        chars_source=len(source_text),
                         queue_depth=jobs.qsize(),
                     )
                 continue
             t_sync = time.perf_counter()
-            ja = _translate_text(translator, en)
+            translated = _translate_text(translator, source_text, source_lang, target_lang)
             dur_ms = (time.perf_counter() - t_sync) * 1000.0
             metrics["translate_samples"] = int(metrics["translate_samples"]) + 1
             metrics["translate_ms_total"] = float(metrics["translate_ms_total"]) + dur_ms
@@ -228,12 +272,20 @@ def _run_worker(
                 "translate_sync_done",
                 t0=line_t0,
                 t1=line_t1,
-                chars_en=len(en),
+                chars_source=len(source_text),
                 ms=round(dur_ms, 2),
             )
             if args.print_console:
-                print(f"[utt {line_t0:.2f}-{line_t1:.2f}] JA: {ja}")
-            bus.push(SubtitleLine(en=en, ja=ja, t0=line_t0, t1=line_t1))
+                print(f"[utt {line_t0:.2f}-{line_t1:.2f}] {target_lang.upper()}: {translated}")
+            bus.push(
+                _subtitle_line(
+                    source_text,
+                    translated,
+                    source_lang,
+                    t0=line_t0,
+                    t1=line_t1,
+                )
+            )
 
     def _chunks_until_stop():
         for chunk in mic.chunks():
@@ -261,17 +313,29 @@ def _run_worker(
         return
     finally:
         for line in segmenter.flush():
-            en = (line.text or "").strip()
-            if not en:
+            source_text = (line.text or "").strip()
+            if not source_text:
                 continue
             metrics["en_commits"] = int(metrics["en_commits"]) + 1
             if args.print_console:
-                print(f"[utt {line.t0:.2f}-{line.t1:.2f}] EN: {en}")
+                print(f"[utt {line.t0:.2f}-{line.t1:.2f}] {source_lang.upper()}: {source_text}")
             if args.async_translate:
-                bus.push(SubtitleLine(en=en, ja="", t0=float(line.t0), t1=float(line.t1)))
+                bus.push(
+                    _subtitle_line(
+                        source_text,
+                        "",
+                        source_lang,
+                        t0=float(line.t0),
+                        t1=float(line.t1),
+                    )
+                )
                 dropped = _queue_put_drop_oldest(
                     jobs,
-                    _TranslateJob(t0=float(line.t0), t1=float(line.t1), en=en),
+                    _TranslateJob(
+                        t0=float(line.t0),
+                        t1=float(line.t1),
+                        source_text=source_text,
+                    ),
                 )
                 if dropped:
                     metrics["queue_drops"] = int(metrics["queue_drops"]) + 1
@@ -281,12 +345,12 @@ def _run_worker(
                         "translate_queue_drop_oldest",
                         t0=float(line.t0),
                         t1=float(line.t1),
-                        chars_en=len(en),
+                        chars_source=len(source_text),
                         queue_depth=jobs.qsize(),
                     )
             else:
                 t_sync = time.perf_counter()
-                ja = _translate_text(translator, en)
+                translated = _translate_text(translator, source_text, source_lang, target_lang)
                 dur_ms = (time.perf_counter() - t_sync) * 1000.0
                 metrics["translate_samples"] = int(metrics["translate_samples"]) + 1
                 metrics["translate_ms_total"] = float(metrics["translate_ms_total"]) + dur_ms
@@ -297,12 +361,20 @@ def _run_worker(
                     "translate_sync_done",
                     t0=float(line.t0),
                     t1=float(line.t1),
-                    chars_en=len(en),
+                    chars_source=len(source_text),
                     ms=round(dur_ms, 2),
                 )
                 if args.print_console:
-                    print(f"[utt {line.t0:.2f}-{line.t1:.2f}] JA: {ja}")
-                bus.push(SubtitleLine(en=en, ja=ja, t0=float(line.t0), t1=float(line.t1)))
+                    print(f"[utt {line.t0:.2f}-{line.t1:.2f}] {target_lang.upper()}: {translated}")
+                bus.push(
+                    _subtitle_line(
+                        source_text,
+                        translated,
+                        source_lang,
+                        t0=float(line.t0),
+                        t1=float(line.t1),
+                    )
+                )
         stop_event.set()
         avg_ms = (
             float(metrics["translate_ms_total"]) / int(metrics["translate_samples"])

@@ -10,6 +10,7 @@
   "max_utter_sec": 999.0,
   "debug": false,
   "ui_language": "en",
+  "caption_language": "en",
   "model": "base",
   "language_lock": "auto",
   "translator": "argos",

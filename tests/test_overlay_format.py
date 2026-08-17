@@ -16,6 +16,13 @@ def test_merge_subtitle_line_replaces_pending_en_with_ja() -> None:
     assert merged[0].ja == "仮訳"
 
 
+def test_merge_subtitle_line_replaces_pending_ja_with_en() -> None:
+    pending = SubtitleLine(en="", ja="こんにちは", t0=1.0, t1=2.0)
+    completed = SubtitleLine(en="Hello", ja="こんにちは", t0=1.0, t1=2.0)
+    merged = merge_subtitle_line([pending], completed, max_lines=4)
+    assert merged == [completed]
+
+
 def test_merge_subtitle_line_drops_exact_duplicate() -> None:
     line = SubtitleLine(en="A", ja="B", t0=1.0, t1=2.0)
     merged = merge_subtitle_line([line], line, max_lines=4)

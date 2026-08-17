@@ -1,0 +1,6 @@
+.venv-build/
+build/
+dist/
+ItoSubIcon.iconset/
+ItoSubIcon.icns
+*.log

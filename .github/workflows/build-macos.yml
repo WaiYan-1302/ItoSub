@@ -1,0 +1,41 @@
+name: Build ItoSub for macOS
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "mac-v*"
+
+jobs:
+  build-apple-silicon:
+    runs-on: macos-15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: arm64
+          cache: pip
+          cache-dependency-path: "ItoSub Mac/requirements-macos.txt"
+
+      - name: Build app, ZIP, and DMG
+        shell: bash
+        run: |
+          chmod +x "ItoSub Mac/build_macos.sh"
+          PYTHON_BIN="$(command -v python3)" "ItoSub Mac/build_macos.sh"
+
+      - name: Upload macOS package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ItoSub-macOS-arm64
+          path: |
+            ItoSub Mac/dist/ItoSub-macOS-arm64.zip
+            ItoSub Mac/dist/ItoSub-macOS-arm64.dmg
+          if-no-files-found: error
+          compression-level: 0

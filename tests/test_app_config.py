@@ -11,6 +11,7 @@ def test_load_default_config_contains_expected_keys() -> None:
     assert cfg["translator"] == "argos"
     assert cfg["language_lock"] in {"auto", "en"}
     assert cfg["ui_language"] in {"en", "ja"}
+    assert cfg["caption_language"] in {"en", "ja"}
     assert "overlay_text_selectable" in cfg
     assert "hotkey_toggle_en" in cfg
     assert "hotkey_toggle_selectable" in cfg

@@ -17,6 +17,7 @@ if QtWidgets is not None:
         settings_requested = QtCore.pyqtSignal()
         test_mic_requested = QtCore.pyqtSignal()
         test_mic_playback_requested = QtCore.pyqtSignal()
+        caption_language_changed = QtCore.pyqtSignal(str)
 
         def __init__(self) -> None:
             super().__init__()
@@ -34,6 +35,21 @@ if QtWidgets is not None:
             title = QtWidgets.QLabel("ItoSub", root)
             title.setObjectName("title")
             lay.addWidget(title)
+
+            caption_row = QtWidgets.QHBoxLayout()
+            caption_row.setSpacing(10)
+            self.caption_language_label = QtWidgets.QLabel("Caption language", root)
+            self.caption_language_label.setObjectName("subhead")
+            self.caption_language_combo = QtWidgets.QComboBox(root)
+            self.caption_language_combo.addItem("ENG", "en")
+            self.caption_language_combo.addItem("JPN", "ja")
+            self.caption_language_combo.setToolTip(
+                "Select the spoken language. Captions are translated into the other language."
+            )
+            caption_row.addWidget(self.caption_language_label)
+            caption_row.addWidget(self.caption_language_combo)
+            caption_row.addStretch(1)
+            lay.addLayout(caption_row)
 
             self.status_label = QtWidgets.QLabel("", root)
             self.status_label.setObjectName("status")
@@ -86,6 +102,7 @@ if QtWidgets is not None:
             self.btn_settings.clicked.connect(self.settings_requested.emit)
             self.btn_test_mic.clicked.connect(self.test_mic_requested.emit)
             self.btn_test_mic_playback.clicked.connect(self.test_mic_playback_requested.emit)
+            self.caption_language_combo.currentIndexChanged.connect(self._on_caption_language_changed)
 
             self.setStyleSheet(
                 """
@@ -114,6 +131,15 @@ if QtWidgets is not None:
                     border-color: #c8f25f;
                 }
                 QPushButton#primary:hover { background: #d3f67f; border-color: #d3f67f; }
+                QComboBox {
+                    background: #22272d;
+                    border: 1px solid #313840;
+                    border-radius: 8px;
+                    color: #e7edf3;
+                    padding: 7px 28px 7px 12px;
+                    font-size: 13px;
+                    font-weight: 700;
+                }
                 QProgressBar {
                     background: #13181d;
                     border: 1px solid #2f3740;
@@ -133,6 +159,20 @@ if QtWidgets is not None:
                 self.stop_requested.emit()
             else:
                 self.run_requested.emit()
+
+        def _on_caption_language_changed(self) -> None:
+            self.caption_language_changed.emit(
+                str(self.caption_language_combo.currentData() or "en")
+            )
+
+        def set_caption_language(self, caption_language: str) -> None:
+            language = str(caption_language or "en").lower()
+            index = self.caption_language_combo.findData(language)
+            if index < 0:
+                index = self.caption_language_combo.findData("en")
+            blocker = QtCore.QSignalBlocker(self.caption_language_combo)
+            self.caption_language_combo.setCurrentIndex(index)
+            del blocker
 
         def set_running(self, running: bool) -> None:
             self._running = running
@@ -168,11 +208,13 @@ if QtWidgets is not None:
                 lang = "en"
             self._ui_language = lang
             if lang == "ja":
+                self.caption_language_label.setText("Caption language")
                 self.btn_settings.setText("設定")
                 self.btn_test_mic.setText("マイクテスト")
                 self.btn_test_mic_playback.setText("録音テスト(10秒)+再生")
                 self.meter_title.setText("マイクレベル")
             else:
+                self.caption_language_label.setText("Caption language")
                 self.btn_settings.setText("Settings")
                 self.btn_test_mic.setText("Test Mic")
                 self.btn_test_mic_playback.setText("Mic Test + Playback")
@@ -184,4 +226,3 @@ else:
             raise ModuleNotFoundError(
                 "PyQt6 is required for MainWindow. Install with: python -m pip install PyQt6"
             ) from _PYQT_IMPORT_ERROR
-

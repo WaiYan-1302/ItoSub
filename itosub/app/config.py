@@ -31,6 +31,7 @@ DEFAULTS: dict[str, Any] = {
     "max_utter_sec": 6.0,
     "debug": False,
     "ui_language": "en",
+    "caption_language": "en",
     "model": "tiny",
     "language_lock": "auto",
     "translator": "argos",
@@ -202,6 +203,12 @@ def parser_with_defaults(defaults: dict[str, Any]) -> argparse.ArgumentParser:
         default=defaults["ui_language"],
         choices=["en", "ja"],
         help="UI language: English or Japanese",
+    )
+    p.add_argument(
+        "--caption-language",
+        default=defaults["caption_language"],
+        choices=["en", "ja"],
+        help="spoken caption language: English or Japanese (translation uses the other language)",
     )
     p.add_argument("--model", default=defaults["model"], help="faster-whisper model size")
     p.add_argument(

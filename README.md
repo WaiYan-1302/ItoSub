@@ -169,6 +169,14 @@ python -m pip install --force-reinstall "setuptools<81"
 python -m itosub.app.main
 ```
 
+Use the `ENG` / `JPN` selector in the main window to choose the spoken caption language:
+
+- `ENG`: English speech -> Japanese translation.
+- `JPN`: Japanese speech -> English translation.
+
+This selector changes caption recognition/translation only; it does not change the app UI language.
+The same choice is available from the CLI with `--caption-language en|ja`.
+
 ## Preferred quality profile (current tuned baseline)
 
 ```powershell
@@ -203,6 +211,7 @@ Notable keys:
 
 - Audio: `device`, `sr`, `channels`, `chunk_sec`, `rms_th`
 - ASR: `model`, `language_lock`
+- Caption direction: `caption_language` (`en|ja`, the spoken/source language)
 - Translation: `translator`, `async_translate`
 - Overlay: `show_en`, `max_lines`, font sizes, hotkeys, `overlay_opacity`, `overlay_position`, `overlay_text_selectable`
 - UI: `ui_language`

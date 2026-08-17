@@ -20,11 +20,13 @@ class ArgosTranslator(Translator):
         import argostranslate.package
         import argostranslate.translate
 
-        installed = argostranslate.translate.get_installed_languages()
-        have_from = any(l.code == self.from_code for l in installed)
-        have_to = any(l.code == self.to_code for l in installed)
+        installed = argostranslate.package.get_installed_packages()
+        have_pair = any(
+            p.from_code == self.from_code and p.to_code == self.to_code
+            for p in installed
+        )
 
-        if not (have_from and have_to):
+        if not have_pair:
             if not self.auto_install:
                 raise RuntimeError("Argos model not installed and auto_install=False")
 

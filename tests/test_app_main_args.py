@@ -108,3 +108,11 @@ def test_app_resolve_args_ui_language(tmp_path: Path) -> None:
     )
     assert args.ui_language == "ja"
 
+
+def test_app_resolve_args_caption_language(tmp_path: Path) -> None:
+    cfg_path = tmp_path / "app.json"
+    cfg_path.write_text(json.dumps({"caption_language": "en"}), encoding="utf-8")
+    args = resolve_args(
+        ["--config", str(cfg_path), "--caption-language", "ja"]
+    )
+    assert args.caption_language == "ja"

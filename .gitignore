@@ -1,1 +1,12 @@
 .idea/workspace.xml
+.venv/
+.pytest_cache/
+**/__pycache__/
+*.pyc
+.idea/
+build/
+dist/
+itosub.egg-info/
+ItoSub Mac/.venv-build/
+ItoSub Mac/build/
+ItoSub Mac/dist/

@@ -8,7 +8,6 @@ import sys
 import threading
 import time
 import traceback
-import webbrowser
 
 from itosub.app.config import load_user_config, resolve_args, save_user_config
 from itosub.app.diagnostics import hint_for_exception, summarize_exception
@@ -187,6 +186,7 @@ def main(argv: list[str] | None = None) -> int:
 
     main_window = MainWindow()
     main_window.apply_ui_language(str(args.ui_language))
+    main_window.set_caption_language(str(args.caption_language))
     main_window.set_brand_image(os.path.join(project_root, "assets", "image", "ItoSubTransparent.png"))
     if not app_icon.isNull():
         main_window.setWindowIcon(app_icon)
@@ -205,6 +205,8 @@ def main(argv: list[str] | None = None) -> int:
 
     def _build_status_line() -> str:
         device = "default" if args.device is None else str(args.device)
+        source = "JPN" if str(args.caption_language) == "ja" else "ENG"
+        target = "ENG" if source == "JPN" else "JPN"
         if str(args.ui_language) == "ja":
             return (
                 f"マイク: {device} | SR: {int(args.sr)} | モデル: {str(args.model)} | "
@@ -214,7 +216,7 @@ def main(argv: list[str] | None = None) -> int:
         return (
             f"Mic: {device} | SR: {int(args.sr)} | Model: {str(args.model)} | "
             f"Lang: {str(args.language_lock)} | "
-            f"Translator: {str(args.translator)}"
+            f"Translator: {str(args.translator)} | Caption: {source} -> {target}"
         )
 
     def _apply_overlay_settings() -> None:
@@ -321,6 +323,41 @@ def main(argv: list[str] | None = None) -> int:
             overlay.hide()
             state.set_stopped()
             logger.info("runtime_stopped")
+
+    def _set_caption_language(caption_language: str) -> None:
+        language = str(caption_language or "en").strip().lower()
+        if language not in ("en", "ja") or language == str(args.caption_language):
+            return
+
+        was_active = state.state in (
+            RuntimeState.RUNNING,
+            RuntimeState.PAUSED,
+            RuntimeState.STARTING,
+        )
+        args.caption_language = language
+        main_window.set_caption_language(language)
+        save_user_config({"caption_language": language}, config_path=args.config)
+        overlay.set_lines([])
+        logger.info("caption_language_changed", extra={"caption_language": language})
+
+        if not was_active:
+            _sync_window_state()
+            return
+
+        _stop_runtime()
+
+        def _start_after_worker_stops(attempts_left: int = 30) -> None:
+            if worker_thread is not None and worker_thread.is_alive() and attempts_left > 0:
+                QtCore.QTimer.singleShot(
+                    100,
+                    lambda: _start_after_worker_stops(attempts_left - 1),
+                )
+                return
+            _start_runtime()
+            _sync_window_state()
+            _refresh_tray_actions()
+
+        _start_after_worker_stops()
 
     def _toggle_pause() -> None:
         if state.state == RuntimeState.PAUSED:
@@ -445,6 +482,7 @@ def main(argv: list[str] | None = None) -> int:
             "rms_th",
             "model",
             "language_lock",
+            "caption_language",
             "chunk_sec",
             "silence_chunks",
             "min_utter_sec",
@@ -473,7 +511,9 @@ def main(argv: list[str] | None = None) -> int:
                 os.startfile(str(log_dir))  # type: ignore[attr-defined]
                 opened = True
             else:
-                opened = webbrowser.open(str(log_dir))
+                opened = QtGui.QDesktopServices.openUrl(
+                    QtCore.QUrl.fromLocalFile(str(log_dir))
+                )
             logger.info("open_logs", extra={"log_dir": str(log_dir), "opened": bool(opened)})
         except Exception:
             logger.exception("open_logs_failed", extra={"log_dir": str(log_dir)})
@@ -661,6 +701,7 @@ def main(argv: list[str] | None = None) -> int:
     main_window.settings_requested.connect(_open_settings)
     main_window.test_mic_requested.connect(_test_mic)
     main_window.test_mic_playback_requested.connect(_test_mic_playback)
+    main_window.caption_language_changed.connect(_set_caption_language)
     overlay.escape_requested.connect(_on_overlay_escape)
 
     timer = QtCore.QTimer()
@@ -769,4 +810,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
